@@ -979,36 +979,130 @@ from os.path import getsize
 from sync import Sync
 from sync.common import Audio, Video, GenerationOptions
 
-# ─────────────── API KEY NODE ──────────────────────────────────────────────
-class SyncApiKeyNode:
-    @classmethod
-    def INPUT_TYPES(cls):
-        return {
-            "required": {
-                "api_key": ("STRING", {"default": ""}),
-            }
-        }
+# ─────────────── CONFIG LOADING UTILITY ──────────────────────────────────────────────
+_CONFIG_CACHE = None
 
-    RETURN_TYPES = ("SYNC_API_KEY",)
-    RETURN_NAMES = ("api_key",)
-    FUNCTION = "provide_api_key"
-    CATEGORY = "Sync.so/Lipsync"
-    
-    # Add instructions support
-    DESCRIPTION = """
-    Sync.so API Key
-    
-    Enter your Sync.so API key to authenticate requests. You can get your API key from:
-    - Visit sync.so dashboard
-    - Navigate to API settings
-    - Copy your API key
-    
-    Key is required for all lipsync operations.
+def load_config():
     """
-
-    def provide_api_key(self, api_key):
-        return ({"api_key": api_key},)
-
+    Load configuration from config.json file in node root directory.
+    Returns dict with api_key and base_url.
+    Caches the result to avoid repeated file reads.
+    
+    FUTURE: To enable multiple location support, uncomment the code below
+    and comment out the simple version above.
+    """
+    global _CONFIG_CACHE
+    
+    if _CONFIG_CACHE is not None:
+        return _CONFIG_CACHE
+    
+    # Get the directory where this file is located (node root)
+    node_root = Path(__file__).parent
+    config_path = node_root / "config.json"
+    
+    default_config = {
+        "api_key": "",
+        "base_url": "https://api.sync.so"
+    }
+    
+    if not config_path.exists():
+        print(f"Warning: config.json not found at {config_path}")
+        print("Please create config.json with your API key. Floyo platform will manage this file.")
+        _CONFIG_CACHE = default_config
+        return _CONFIG_CACHE
+    
+    try:
+        with open(config_path, 'r') as f:
+            config = json.load(f)
+        
+        # Merge with defaults to ensure all keys exist
+        merged_config = {**default_config, **config}
+        _CONFIG_CACHE = merged_config
+        return _CONFIG_CACHE
+    except json.JSONDecodeError as e:
+        print(f"Error: Invalid JSON in config.json: {e}")
+        _CONFIG_CACHE = default_config
+        return _CONFIG_CACHE
+    except Exception as e:
+        print(f"Error reading config.json: {e}")
+        _CONFIG_CACHE = default_config
+        return _CONFIG_CACHE
+    
+    # ============================================================================
+    # FUTURE: MULTIPLE LOCATION SUPPORT (Currently Commented)
+    # ============================================================================
+    # Uncomment below code to enable config.json loading from multiple locations:
+    # 1. Node root directory (same as sync_node.py) - DEFAULT
+    # 2. Parent directory (../config.json)
+    # 3. ComfyUI root directory (../../config.json)
+    # 4. Environment variable SYNC_CONFIG_PATH (if set)
+    # ============================================================================
+    #
+    # global _CONFIG_CACHE
+    # 
+    # if _CONFIG_CACHE is not None:
+    #     return _CONFIG_CACHE
+    # 
+    # default_config = {
+    #     "api_key": "",
+    #     "base_url": "https://api.sync.so"
+    # }
+    # 
+    # # Get the directory where this file is located (node root)
+    # node_root = Path(__file__).parent
+    # 
+    # # List of possible config.json locations (in priority order)
+    # possible_paths = [
+    #     node_root / "config.json",                    # 1. Node root (default)
+    #     node_root.parent / "config.json",             # 2. Parent directory (../config.json)
+    #     node_root.parent.parent / "config.json",      # 3. ComfyUI root (../../config.json)
+    #     node_root.parent.parent.parent / "config.json", # 4. One more level up
+    # ]
+    # 
+    # # Check environment variable for custom path
+    # env_config_path = os.getenv("SYNC_CONFIG_PATH")
+    # if env_config_path:
+    #     env_path = Path(env_config_path)
+    #     if env_path.is_absolute():
+    #         possible_paths.insert(0, env_path)
+    #     else:
+    #         possible_paths.insert(0, node_root / env_path)
+    # 
+    # config_path = None
+    # for path in possible_paths:
+    #     if path.exists() and path.is_file():
+    #         config_path = path
+    #         print(f"Found config.json at: {config_path}")
+    #         break
+    # 
+    # if config_path is None:
+    #     print(f"Warning: config.json not found in any of these locations:")
+    #     for path in possible_paths[:4]:  # Show first 4 default paths
+    #         print(f"  - {path}")
+    #     print("Please create config.json in one of these locations.")
+    #     print("Floyo platform will manage this file automatically.")
+    #     print("You can also set SYNC_CONFIG_PATH environment variable for custom location.")
+    #     _CONFIG_CACHE = default_config
+    #     return _CONFIG_CACHE
+    # 
+    # try:
+    #     with open(config_path, 'r') as f:
+    #         config = json.load(f)
+    #     
+    #     # Merge with defaults to ensure all keys exist
+    #     merged_config = {**default_config, **config}
+    #     _CONFIG_CACHE = merged_config
+    #     print(f"Config loaded successfully from: {config_path}")
+    #     return _CONFIG_CACHE
+    # except json.JSONDecodeError as e:
+    #     print(f"Error: Invalid JSON in config.json at {config_path}: {e}")
+    #     _CONFIG_CACHE = default_config
+    #     return _CONFIG_CACHE
+    # except Exception as e:
+    #     print(f"Error reading config.json from {config_path}: {e}")
+    #     _CONFIG_CACHE = default_config
+    #     return _CONFIG_CACHE
+    # ============================================================================
 
 # ─────────────── UNIFIED VIDEO INPUT NODE ──────────────────────────────────────────────
 class SyncVideoInputNode:
@@ -1032,18 +1126,22 @@ class SyncVideoInputNode:
     DESCRIPTION = """
     Video Input
     
-    Provide a video input in one of three ways:
+    Provide a video input in one of three ways (URL preferred):
     
-    1. Direct Video Connection: Connect a video output from other nodes (e.g., LoadVideo)
-    2. Local File Path: Enter the full path to a video file on your system
-    3. Video URL: Enter a direct URL to a video file
+    1. Video URL (Preferred): Enter a direct URL to a video file
+    2. Direct Video Connection: Connect a video output from other nodes (e.g., LoadVideo)
+    3. Local File Path: Enter the full path to a video file on your system
     
     Supported formats: MP4
-    File size limit: 20MB for file uploads
+    Note: URL inputs are preferred until Floyo API adds file upload support.
     
     """
 
     def provide_video(self, video=None, video_path="", video_url=""):
+        # Priority: URL first (preferred), then direct connection, then file path
+        if video_url and video_url != "":
+            print(f" Using video URL: {video_url}")
+            return ({"video_url": video_url, "type": "url"},)
         
         if video is not None:
             return self._process_loaded_video(video)
@@ -1054,10 +1152,6 @@ class SyncVideoInputNode:
                 return ({"video_path": video_path, "type": "path"},)
             else:
                 print(f" Manual video path not found: {video_path}")
-        
-        if video_url and video_url != "":
-            print(f" Using video URL: {video_url}")
-            return ({"video_url": video_url, "type": "url"},)
         
         print(" No valid video input provided")
         return ({"video_path": "", "type": "path"},)
@@ -1233,11 +1327,11 @@ class SyncAudioInputNode:
     DESCRIPTION = """
     Audio/TTS Input
     
-    Provide audio input in one of the four ways:
+    Provide audio input in one of the four ways (URL preferred):
     
-    1. Direct Audio Connection: Connect audio from other nodes
-    2. Local Audio File: Enter path to audio file (WAV, MP3, etc.)
-    3. Audio URL: Enter direct URL to audio file
+    1. Audio URL (Preferred): Enter direct URL to audio file
+    2. Direct Audio Connection: Connect audio from other nodes
+    3. Local Audio File: Enter path to audio file (WAV, MP3, etc.)
     
     Text-to-Speech Option:
     4. TTS Generation: Use ElevenLabs TTS
@@ -1245,11 +1339,12 @@ class SyncAudioInputNode:
        - TTS Script: Enter the text to be spoken
     
     Priority: TTS takes priority if both voice ID and script are provided.
+    Note: URL inputs are preferred until Floyo API adds file upload support.
     
     """
 
     def provide_audio(self, audio=None, audio_path="", audio_url="", tts_voice_id="", tts_script=""):
-        
+        # Priority: TTS first, then URL (preferred), then direct connection, then file path
         if tts_voice_id and tts_script:
             print(f" Using TTS input: voice_id={tts_voice_id}, script length={len(tts_script)}")
             return ({
@@ -1258,6 +1353,10 @@ class SyncAudioInputNode:
                 "tts_script": tts_script,
                 "audio_path": "",  
             },)
+        
+        if audio_url and audio_url != "":
+            print(f" Using audio URL: {audio_url}")
+            return ({"audio_url": audio_url, "type": "url"},)
         
         if audio is not None:
             return self._process_loaded_audio(audio)
@@ -1268,10 +1367,6 @@ class SyncAudioInputNode:
                 return ({"audio_path": audio_path, "type": "path"},)
             else:
                 print(f" Manual audio path not found: {audio_path}")
-        
-        if audio_url and audio_url != "":
-            print(f" Using audio URL: {audio_url}")
-            return ({"audio_url": audio_url, "type": "url"},)
         
         print(" No valid audio input provided")
         return ({"audio_path": "", "type": "path"},)
@@ -1444,7 +1539,6 @@ class SyncLipsyncMainNode:
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "api_key": ("SYNC_API_KEY", {"forceInput": True}),
                 "video": ("SYNC_VIDEO", {"forceInput": True}),
                 "audio": ("SYNC_AUDIO", {"forceInput": True}),  # Now handles both audio and TTS
                 "model": (["lipsync-2-pro", "lipsync-2", "lipsync-1.9.0-beta"],),
@@ -1469,9 +1563,10 @@ class SyncLipsyncMainNode:
     DESCRIPTION = """
     
     Required Inputs:
-    - API Key: Connection from API Key node
-    - Video: Connection from Video Input node  
-    - Audio: Connection from Audio/TTS Input node
+    - Video: Connection from Video Input node (URL preferred)
+    - Audio: Connection from Audio/TTS Input node (URL preferred)
+    
+    Note: API key is managed via config.json file (handled by Floyo platform).
     
     Model Options:
     - lipsync-2-pro: Highest quality (Subscription Needed)
@@ -1508,18 +1603,22 @@ class SyncLipsyncMainNode:
 
     def lipsync_generate(
         self,
-        api_key, video, audio, model, segment_secs, segment_frames,
+        video, audio, model, segment_secs, segment_frames,
         sync_mode, temperature, active_speaker, occlusion_detection,
     ):
-        # Validate API key
-        if not api_key.get("api_key"):
-            return ("", "Error: API key is required")
+        # Load config and validate API key
+        config = load_config()
+        api_key_str = config.get("api_key", "")
+        base_url = config.get("base_url", "https://api.sync.so")
+        
+        if not api_key_str:
+            error_msg = "Error: API key not found in config.json. Please ensure Floyo platform has configured the API key."
+            print(error_msg)
+            return ("", error_msg)
         
         # Validate inputs
         if not video or not audio:
             return ("", "Error: Both video and audio inputs are required")
-        
-        api_key_str = api_key["api_key"]
         
         video_path_str = ""
         video_url_str = ""
@@ -1580,18 +1679,23 @@ class SyncLipsyncMainNode:
                         "options": {
                             "sync_mode": sync_mode,
                             "temperature": temperature,
-                            "active_speaker": active_speaker,
                         },
                     }
+
+                    # Add active_speaker_detection if active_speaker is enabled
+                    if active_speaker:
+                        payload["options"]["active_speaker_detection"] = {
+                            "auto_detect": True
+                        }
+                    
+                    # Add occlusion_detection_enabled as separate field
+                    if occlusion_detection:
+                        payload["options"]["occlusion_detection_enabled"] = True
 
                     if segment_secs:
                         payload["options"]["segments_secs"] = segment_secs
                     if segment_frames:
                         payload["options"]["segments_frames"] = segment_frames
-                    if occlusion_detection:
-                        payload["options"]["active_speaker_detection"] = {
-                            "occlusion_detection_enabled": True
-                        }
 
                     print(" Sending TTS request with video URL...")
                     print(f" Payload: {json.dumps(payload, indent=2)}")
@@ -1600,7 +1704,7 @@ class SyncLipsyncMainNode:
                     tts_headers = headers.copy()
                     tts_headers["Content-Type"] = "application/json"
                     
-                    res = requests.post("https://api.sync.so/v2/generate", headers=tts_headers, json=payload)
+                    res = requests.post(f"{base_url}/v2/generate", headers=tts_headers, json=payload)
                     
                 elif video_path_str and Path(video_path_str).exists():
                     # Multipart form data request for video file + TTS
@@ -1628,17 +1732,22 @@ class SyncLipsyncMainNode:
                     options = {
                         "sync_mode": sync_mode,
                         "temperature": temperature,
-                        "active_speaker": active_speaker,
                     }
+                    
+                    # Add active_speaker_detection if active_speaker is enabled
+                    if active_speaker:
+                        options["active_speaker_detection"] = {
+                            "auto_detect": True
+                        }
+                    
+                    # Add occlusion_detection_enabled as separate field
+                    if occlusion_detection:
+                        options["occlusion_detection_enabled"] = True
                     
                     if segment_secs:
                         options["segments_secs"] = segment_secs
                     if segment_frames:
                         options["segments_frames"] = segment_frames
-                    if occlusion_detection:
-                        options["active_speaker_detection"] = {
-                            "occlusion_detection_enabled": True
-                        }
                     
                     data["options"] = json.dumps(options)
                     
@@ -1649,7 +1758,7 @@ class SyncLipsyncMainNode:
                     
                     file_headers = headers.copy()
                     
-                    res = requests.post("https://api.sync.so/v2/generate", headers=file_headers, data=data, files=files)
+                    res = requests.post(f"{base_url}/v2/generate", headers=file_headers, data=data, files=files)
                     files["video"].close()
                     
                 else:
@@ -1693,16 +1802,27 @@ class SyncLipsyncMainNode:
                         except:
                             print(f" Warning: Could not parse segment_frames: {segment_frames}")
 
+                    # Build options object for form data
+                    options_dict = {
+                        "sync_mode": sync_mode,
+                        "temperature": temperature,
+                    }
+                    
+                    # Add active_speaker_detection if active_speaker is enabled
+                    if active_speaker:
+                        options_dict["active_speaker_detection"] = {
+                            "auto_detect": True
+                        }
+                    
+                    # Add occlusion_detection_enabled as separate field
+                    if occlusion_detection:
+                        options_dict["occlusion_detection_enabled"] = True
+
                     fields = [
                         ("model", model),
-                        ("sync_mode", sync_mode),
-                        ("temperature", str(temperature)),
-                        ("active_speaker", str(active_speaker).lower()),
-                        ("input", json.dumps(input_block))
+                        ("input", json.dumps(input_block)),
+                        ("options", json.dumps(options_dict))
                     ]
-
-                    if occlusion_detection:
-                        fields.append(("active_speaker_detection", json.dumps({"occlusion_detection_enabled": True})))
 
                     files = {}
                     if video_path_str and Path(video_path_str).exists():
@@ -1720,7 +1840,7 @@ class SyncLipsyncMainNode:
                         print(f" Using audio URL: {audio_url_str}")
 
                     print(" Sending POST request...")
-                    res = requests.post("https://api.sync.so/v2/generate", headers=headers, data=fields, files=files or None)
+                    res = requests.post(f"{base_url}/v2/generate", headers=headers, data=fields, files=files or None)
                     print(f" Response code: {res.status_code}")
                     res.raise_for_status()
                     job_id = res.json()["id"]
@@ -1731,7 +1851,7 @@ class SyncLipsyncMainNode:
                         
                 else:
                     print(" Using SDK fallback")
-                    client = Sync(base_url="https://api.sync.so", api_key=api_key_str).generations
+                    client = Sync(base_url=base_url, api_key=api_key_str).generations
                     video_kwargs = {}
                     if segment_secs:
                         try:
@@ -1770,7 +1890,7 @@ class SyncLipsyncMainNode:
             while status not in {"COMPLETED", "FAILED"}:
                 print(f" Waiting {poll_iv}s...")
                 time.sleep(poll_iv)
-                poll = requests.get(f"https://api.sync.so/v2/generate/{job_id}", headers=headers)
+                poll = requests.get(f"{base_url}/v2/generate/{job_id}", headers=headers)
                 poll.raise_for_status()
                 status = poll.json()["status"]
                 print(f" Job status: {status}")
@@ -1949,7 +2069,6 @@ class SyncLipsyncOutputNode:
 
 # ────────────── REGISTER (UPDATED) ────────────────────────────────────
 NODE_CLASS_MAPPINGS = {
-    "SyncApiKeyNode": SyncApiKeyNode,
     "SyncVideoInputNode": SyncVideoInputNode,
     "SyncAudioInputNode": SyncAudioInputNode, 
     "SyncLipsyncMainNode": SyncLipsyncMainNode,
@@ -1957,7 +2076,6 @@ NODE_CLASS_MAPPINGS = {
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "SyncApiKeyNode": "sync.so lipsync – api key",
     "SyncVideoInputNode": "sync.so lipsync – video input",
     "SyncAudioInputNode": "sync.so lipsync – audio/tts input",  
     "SyncLipsyncMainNode": "sync.so lipsync – generate 💰",
