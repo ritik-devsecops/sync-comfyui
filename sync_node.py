@@ -17,7 +17,7 @@
 #     RETURN_TYPES = ("SYNC_API_KEY",)
 #     RETURN_NAMES = ("api_key",)
 #     FUNCTION = "provide_api_key"
-#     CATEGORY = "Sync.so/Lipsync"
+#     CATEGORY = "Floyo/Lipsync API"
     
 #     # Add instructions support
 #     DESCRIPTION = """
@@ -51,7 +51,7 @@
 #     RETURN_TYPES = ("SYNC_VIDEO",)
 #     RETURN_NAMES = ("video",)
 #     FUNCTION = "provide_video"
-#     CATEGORY = "Sync.so/Lipsync"
+#     CATEGORY = "Floyo/Lipsync API"
     
 #     # Add instructions support
 #     DESCRIPTION = """
@@ -252,7 +252,7 @@
 #     RETURN_TYPES = ("SYNC_AUDIO",)
 #     RETURN_NAMES = ("audio",)
 #     FUNCTION = "provide_audio"
-#     CATEGORY = "Sync.so/Lipsync"
+#     CATEGORY = "Floyo/Lipsync API"
     
 #     # Add instructions support
 #     DESCRIPTION = """
@@ -488,7 +488,7 @@
 #     RETURN_TYPES = ("STRING",)
 #     RETURN_NAMES = ("output_path",)
 #     FUNCTION = "lipsync_generate"
-#     CATEGORY = "Sync.so/Lipsync"
+#     CATEGORY = "Floyo/Lipsync API"
     
 #     # Add instructions support
 #     DESCRIPTION = """
@@ -841,7 +841,7 @@
 #     RETURN_TYPES = ("STRING", "IMAGE")
 #     RETURN_NAMES = ("output_path", "output_video")
 #     FUNCTION = "passthrough"
-#     CATEGORY = "Sync.so/Lipsync"
+#     CATEGORY = "Floyo/Lipsync API"
 #     OUTPUT_NODE = True
     
 #     # Add instructions support
@@ -1120,20 +1120,20 @@ class SyncVideoInputNode:
     RETURN_TYPES = ("SYNC_VIDEO",)
     RETURN_NAMES = ("video",)
     FUNCTION = "provide_video"
-    CATEGORY = "Sync.so/Lipsync"
+    CATEGORY = "Floyo/Lipsync API"
     
     # Add instructions support
     DESCRIPTION = """
-    Video Input
+    Floyo Lipsync API - Video Input
     
-    Provide a video input in one of three ways (URL preferred):
+    Provide a video input in one of three ways:
     
-    1. Video URL (Preferred): Enter a direct URL to a video file
+    1. Video URL: Enter a direct URL to a video file (Primary method)
     2. Direct Video Connection: Connect a video output from other nodes (e.g., LoadVideo)
     3. Local File Path: Enter the full path to a video file on your system
     
     Supported formats: MP4
-    Note: URL inputs are preferred until Floyo API adds file upload support.
+    Note: This node is part of Floyo Platform's Lipsync API integration.
     
     """
 
@@ -1321,15 +1321,15 @@ class SyncAudioInputNode:
     RETURN_TYPES = ("SYNC_AUDIO",)
     RETURN_NAMES = ("audio",)
     FUNCTION = "provide_audio"
-    CATEGORY = "Sync.so/Lipsync"
+    CATEGORY = "Floyo/Lipsync API"
     
     # Add instructions support
     DESCRIPTION = """
-    Audio/TTS Input
+    Floyo Lipsync API - Audio/TTS Input
     
-    Provide audio input in one of the four ways (URL preferred):
+    Provide audio input in one of the four ways:
     
-    1. Audio URL (Preferred): Enter direct URL to audio file
+    1. Audio URL: Enter direct URL to audio file (Primary method)
     2. Direct Audio Connection: Connect audio from other nodes
     3. Local Audio File: Enter path to audio file (WAV, MP3, etc.)
     
@@ -1339,7 +1339,7 @@ class SyncAudioInputNode:
        - TTS Script: Enter the text to be spoken
     
     Priority: TTS takes priority if both voice ID and script are provided.
-    Note: URL inputs are preferred until Floyo API adds file upload support.
+    Note: This node is part of Floyo Platform's Lipsync API integration.
     
     """
 
@@ -1557,19 +1557,20 @@ class SyncLipsyncMainNode:
     RETURN_TYPES = ("STRING", "STRING")
     RETURN_NAMES = ("output_path", "status_message")
     FUNCTION = "lipsync_generate"
-    CATEGORY = "Sync.so/Lipsync"
+    CATEGORY = "Floyo/Lipsync API"
     
     # Add instructions support
     DESCRIPTION = """
+    Floyo Lipsync API - Generate
     
     Required Inputs:
-    - Video: Connection from Video Input node (URL preferred)
-    - Audio: Connection from Audio/TTS Input node (URL preferred)
+    - Video: Connection from Video Input node
+    - Audio: Connection from Audio/TTS Input node
     
     Note: API key is managed via config.json file (handled by Floyo platform).
     
     Model Options:
-    - lipsync-2-pro: Highest quality (Subscription Needed)
+    - lipsync-2-pro: Highest quality
     - lipsync-2: Balanced quality and speed
     - lipsync-1.9.0-beta: Fastest processing
     
@@ -1954,16 +1955,18 @@ class SyncLipsyncOutputNode:
     RETURN_TYPES = ("STRING", "IMAGE")
     RETURN_NAMES = ("output_path", "output_video")
     FUNCTION = "passthrough"
-    CATEGORY = "Sync.so/Lipsync"
+    CATEGORY = "Floyo/Lipsync API"
     OUTPUT_NODE = True
     
     # Add instructions support
     DESCRIPTION = """
-    Lipsync Output
+    Floyo Lipsync API - Output
  
     Optional Settings:
     - Custom Video Path: Directory to copy output video
     - Custom Video Name: Custom filename for the output video
+    
+    Note: This node is part of Floyo Platform's Lipsync API integration.
     """
 
     def passthrough(self, output_path, custom_video_path="", custom_video_name=""):
@@ -2076,10 +2079,10 @@ NODE_CLASS_MAPPINGS = {
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "SyncVideoInputNode": "sync.so lipsync – video input",
-    "SyncAudioInputNode": "sync.so lipsync – audio/tts input",  
-    "SyncLipsyncMainNode": "sync.so lipsync – generate 💰",
-    "SyncLipsyncOutputNode": "sync.so lipsync – output",
+    "SyncVideoInputNode": "Floyo Lipsync API – Video Input",
+    "SyncAudioInputNode": "Floyo Lipsync API – Audio/TTS Input",  
+    "SyncLipsyncMainNode": "Floyo Lipsync API – Generate",
+    "SyncLipsyncOutputNode": "Floyo Lipsync API – Output",
 }
 
-print("sync.so lipsync node loaded.")
+print("Floyo Lipsync API node loaded.")

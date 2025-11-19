@@ -91,7 +91,7 @@
       "outputs": [],
       "properties": {},
       "widgets_values": [
-        "Floyo Lipsync API - Video Input Options:\n\n1. Video URL (Primary): Enter direct video URL\n2. Direct Connection: Connect from LoadVideo\n3. File Path: Enter local file path\n\nSupported: MP4 format\nNote: URL inputs are the primary method for Floyo Platform integration."
+        "Floyo Lipsync API - Video Input Options:\n\n1. Direct Connection: Connect from LoadVideo\n2. File Path: Enter local file path\n\nSupported: MP4 format\nLimit: 20MB for uploads"
       ],
       "color": "#2a363b",
       "bgcolor": "#3f5159"
@@ -237,7 +237,7 @@
         "cnr_id": "comfyui-sync-lipsync-node",
         "ver": "0f9140b14c01500153cf05939c337179ef28e2cd",
         "Node name for S&R": "SyncVideoInputNode",
-        "description": "Floyo Lipsync API - Video Input\n\nProvide a video input in one of three ways:\n\n1. Video URL: Enter a direct URL to a video file (Primary method)\n2. Direct Video Connection: Connect a video output from other nodes (e.g., LoadVideo)\n3. Local File Path: Enter the full path to a video file on your system\n\nSupported formats: MP4\nNote: This node is part of Floyo Platform's Lipsync API integration."
+        "description": "Floyo Lipsync API - Video Input\n\nProvide a video input in one of two ways:\n\n1. Direct Video Connection: Connect a video output from other nodes (e.g., LoadVideo)\n2. Local File Path: Enter the full path to a video file on your system\n\nSupported formats: MP4\nNote: This node is part of Floyo Platform's Lipsync API integration."
       },
       "widgets_values": [
         "",
@@ -262,7 +262,7 @@
       "outputs": [],
       "properties": {},
       "widgets_values": [
-        "Floyo Lipsync API - Audio/TTS Input Options:\n\n1. Audio URL (Primary): Enter direct audio URL\n2. Direct Audio: Connect from LoadAudio\n3. Audio File: Enter file path (WAV, MP3)\n4. TTS: Use ElevenLabs voices\n   • Voice ID: ElevenLabs voice ID\n   • Script: Text to be spoken\n\nTTS takes priority if both ID and script provided.\nNote: URL inputs are the primary method for Floyo Platform integration."
+        "Floyo Lipsync API - Audio/TTS Input Options:\n\n1. Direct Audio: Connect from LoadAudio\n2. Audio File: Enter file path (WAV, MP3)\n4. TTS: Use ElevenLabs voices\n   • Voice ID: ElevenLabs voice ID\n   • Script: Text to be spoken\n\nTTS takes priority if both ID and script provided."
       ],
       "color": "#2a363b",
       "bgcolor": "#3f5159"
@@ -302,7 +302,7 @@
         "cnr_id": "comfyui-sync-lipsync-node",
         "ver": "0f9140b14c01500153cf05939c337179ef28e2cd",
         "Node name for S&R": "SyncAudioInputNode",
-        "description": "Floyo Lipsync API - Audio/TTS Input\n\nProvide audio input in one of the four ways:\n\n1. Audio URL: Enter direct URL to audio file (Primary method)\n2. Direct Audio Connection: Connect audio from other nodes\n3. Local Audio File: Enter path to audio file (WAV, MP3, etc.)\n\nText-to-Speech Option:\n4. TTS Generation: Use ElevenLabs TTS\n   - TTS Voice ID: Enter your ElevenLabs voice ID\n   - TTS Script: Enter the text to be spoken\n\nPriority: TTS takes priority if both voice ID and script are provided.\nNote: This node is part of Floyo Platform's Lipsync API integration."
+        "description": "Floyo Lipsync API - Audio/TTS Input\n\nProvide audio input in one of three ways:\n\n1. Direct Audio Connection: Connect audio from other nodes\n2. Local Audio File: Enter path to audio file (WAV, MP3, etc.)\n\nText-to-Speech Option:\n3. TTS Generation: Use ElevenLabs TTS\n   - TTS Voice ID: Enter your ElevenLabs voice ID\n   - TTS Script: Enter the text to be spoken\n\nPriority: TTS takes priority if both voice ID and script are provided.\nNote: This node is part of Floyo Platform's Lipsync API integration."
       },
       "widgets_values": [
         "",
